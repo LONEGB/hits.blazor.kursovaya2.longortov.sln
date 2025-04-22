@@ -1,0 +1,68 @@
+﻿@page "/sales"
+@inject IDataService DataService
+@attribute [Authorize]
+
+<h3>Отчет по продажам</h3>
+
+@if (report == null)
+{
+    <p>Загрузка...</p>
+}
+else
+{
+    <table class="table table-bordered mt-4">
+        <thead>
+            <tr>
+                <th>Товар</th>
+                <th>Кол-во продаж</th>
+                <th>Общая сумма</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in report)
+            {
+                <tr>
+                    <td>@row.ProductName</td>
+                    <td>@row.TotalQuantity</td>
+                    <td>@row.TotalSum.ToString("C")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <a class="btn btn-success mt-3" href="/api/reports/sales/pdf" target="_blank">Скачать PDF</a>
+}
+
+@code {
+    private List<SalesReportRow>? report;
+
+    public class SalesReportRow
+    {
+        public string ProductName { get; set; } = "";
+        public int TotalQuantity { get; set; }
+        public decimal TotalSum { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        var sales = await DataService.GetAllInventoryOperationsAsync();
+
+        report = sales
+            .Where(o => o.OperationType == OperationType.Sale)
+            .GroupBy(o => o.Product)
+            .Select(g => new SalesReportRow
+                {
+                    ProductName = g.Key.Name,
+                    TotalQuantity = g.Sum(x => x.Quantity),
+                    TotalSum = g.Sum(x => x.Quantity * x.Product.Price)
+                })
+            .ToList();
+
+        StateHasChanged();
+    }
+}

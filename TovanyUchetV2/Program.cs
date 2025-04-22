@@ -1,9 +1,12 @@
-using Microsoft.AspNetCore.Components.Authorization;
+﻿using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using QuestPDF.Infrastructure;
 using TovanyUchetV2.Components;
 using TovanyUchetV2.Components.Account;
 using TovanyUchetV2.Data;
+using TovanyUchetV2.Services;
+
 
 namespace TovanyUchetV2
 {
@@ -18,6 +21,7 @@ namespace TovanyUchetV2
                 .AddInteractiveServerComponents();
 
             builder.Services.AddCascadingAuthenticationState();
+            builder.Services.AddControllers();
             builder.Services.AddScoped<IdentityUserAccessor>();
             builder.Services.AddScoped<IdentityRedirectManager>();
             builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
@@ -40,6 +44,7 @@ namespace TovanyUchetV2
                 .AddDefaultTokenProviders();
 
             builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+            builder.Services.AddScoped<IDataService, MSSQLDataService>();
 
             var app = builder.Build();
 
@@ -59,12 +64,15 @@ namespace TovanyUchetV2
 
             app.UseStaticFiles();
             app.UseAntiforgery();
+            app.MapControllers();
 
             app.MapRazorComponents<App>()
                 .AddInteractiveServerRenderMode();
 
             // Add additional endpoints required by the Identity /Account Razor components.
             app.MapAdditionalIdentityEndpoints();
+            QuestPDF.Settings.License = LicenseType.Community;
+
 
             app.Run();
         }

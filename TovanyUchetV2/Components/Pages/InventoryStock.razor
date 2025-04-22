@@ -1,0 +1,61 @@
+﻿@page "/inventory/stock"
+@inject IDataService DataService
+@attribute [Authorize]
+
+<h3>Остатки товаров на складе</h3>
+
+@if (stock == null)
+{
+    <p>Загрузка...</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Товар</th>
+                <th>Остаток</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in stock)
+            {
+                <tr>
+                    <td>@row.ProductName</td>
+                    <td>@row.Quantity</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<StockRow>? stock;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var operations = await DataService.GetAllInventoryOperationsAsync();
+
+        stock = operations
+            .GroupBy(o => o.Product)
+            .Select(g => new StockRow
+                {
+                    ProductName = g.Key.Name,
+                    Quantity = g.Sum(x => x.OperationType switch
+                    {
+                        OperationType.Purchase => x.Quantity,
+                        OperationType.Return => x.Quantity,
+                        OperationType.Sale => -x.Quantity,
+                        OperationType.WriteOff => -x.Quantity,
+                        _ => 0
+                    })
+                })
+            .ToList();
+    }
+
+    public class StockRow
+    {
+        public string ProductName { get; set; } = "";
+        public int Quantity { get; set; }
+    }
+}

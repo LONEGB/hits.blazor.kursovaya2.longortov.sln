@@ -1,0 +1,62 @@
+﻿@page "/editinventory/add"
+@page "/editinventory/{ProductId:int}"
+@inject IDataService DataService
+@inject NavigationManager NavManager
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+<h3>@(IsEditMode ? "Редактировать товар" : "Добавить товар")</h3>
+
+<EditForm Model="@product" OnValidSubmit="Save">
+    <DataAnnotationsValidator />
+    <FormComponents.ValidationSummary />
+<FormComponents.ValidationMessage For="() => operation.ProductId" />
+
+
+    <div class="mb-3">
+        <label>Название:</label>
+        <InputText class="form-control" @bind-Value="product.Name" />
+        <ValidationMessage For="() => product.Name" />
+    </div>
+    <div class="mb-3">
+        <label>Категория:</label>
+        <InputText class="form-control" @bind-Value="product.Category" />
+    </div>
+    <div class="mb-3">
+        <label>Цена:</label>
+        <InputNumber class="form-control" @bind-Value="product.Price" />
+        <ValidationMessage For="() => product.Price" />
+    </div>
+    <div class="mb-3">
+        <label>Остаток на складе:</label>
+        <InputNumber class="form-control" @bind-Value="product.QuantityInStock" />
+        <ValidationMessage For="() => product.QuantityInStock" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Сохранить</button>
+    <button type="button" class="btn btn-secondary" @onclick='() => NavManager.NavigateTo("/inventory")'>
+        Отмена
+    </button>
+</EditForm>
+
+@code {
+    [Parameter]
+    public int? ProductId { get; set; }
+
+    private Product product = new();
+    private bool IsEditMode => ProductId.HasValue;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (IsEditMode && ProductId != null)
+        {
+            product = await DataService.GetProductByIdAsync(ProductId.Value) ?? new();
+        }
+    }
+
+    private async Task Save()
+    {
+        await DataService.AddOrUpdateProductAsync(product);
+        NavManager.NavigateTo("/inventory");
+    }
+}

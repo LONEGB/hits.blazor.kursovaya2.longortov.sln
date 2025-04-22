@@ -14,6 +14,8 @@
 <h3>Profile</h3>
 <StatusMessage />
 
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+
 <div class="row">
     <div class="col-md-6">
         <EditForm Model="Input" FormName="profile" OnValidSubmit="OnValidSubmitAsync" method="post">
@@ -23,6 +25,13 @@
                 <input type="text" value="@username" class="form-control" placeholder="Please choose your username." disabled />
                 <label for="username" class="form-label">Username</label>
             </div>
+
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.FullName" class="form-control" placeholder="Введите ваше ФИО" />
+                <label for="fullname" class="form-label">Full name</label>
+                <ValidationMessage For="() => Input.FullName" class="text-danger" />
+            </div>
+
             <div class="form-floating mb-3">
                 <InputText @bind-Value="Input.PhoneNumber" class="form-control" placeholder="Please enter your phone number." />
                 <label for="phone-number" class="form-label">Phone number</label>
@@ -44,6 +53,9 @@
     [SupplyParameterFromForm]
     private InputModel Input { get; set; } = new();
 
+    
+    
+
     protected override async Task OnInitializedAsync()
     {
         user = await UserAccessor.GetRequiredUserAsync(HttpContext);
@@ -51,10 +63,18 @@
         phoneNumber = await UserManager.GetPhoneNumberAsync(user);
 
         Input.PhoneNumber ??= phoneNumber;
+        Input.FullName = user.FullName;
     }
+
 
     private async Task OnValidSubmitAsync()
     {
+        if (Input.FullName != user.FullName)
+        {
+            user.FullName = Input.FullName;
+            await UserManager.UpdateAsync(user);
+        }
+
         if (Input.PhoneNumber != phoneNumber)
         {
             var setPhoneResult = await UserManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
@@ -73,5 +93,8 @@
         [Phone]
         [Display(Name = "Phone number")]
         public string? PhoneNumber { get; set; }
+        [Display(Name = "Full name")]
+        public string? FullName { get; set; }
     }
 }
+
